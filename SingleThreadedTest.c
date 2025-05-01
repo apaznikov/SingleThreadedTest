@@ -24,7 +24,9 @@ void thread_creator() {
   func_in_both_context_but_mt();
 }
 
-void deep_single_threaded() { }
+void deep_single_threaded() {
+  GV_RO++;
+}
 
 void single_threaded() {
   func_in_both_context_but_mt();
