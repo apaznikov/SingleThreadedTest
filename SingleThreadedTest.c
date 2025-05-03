@@ -26,9 +26,11 @@ void thread_creator() {
 
 void deep_single_threaded() {
   GV_RO++;
+  GV_RW++;
 }
 
 void single_threaded() {
+  GV_RW++;
   func_in_both_context_but_mt();
   deep_single_threaded();
 }

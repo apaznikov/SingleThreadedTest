@@ -32,7 +32,7 @@ set(CMAKE_CXX_LINK_EXECUTABLE
         "${LLVM_LINK_EXECUTABLE} <LINK_FLAGS> -S <OBJECTS> -o <TARGET>.ll <LINK_LIBRARIES>")
 
 function(add_single_threaded_target target_name source_file
-        analysis_pass tsan_ea_option)
+        analysis_pass)
         add_executable(${target_name} ${source_file})
 
         target_compile_options(${target_name} PRIVATE -O0 -S -emit-llvm
@@ -60,18 +60,31 @@ function(add_single_threaded_target target_name source_file
 #                COMMAND ${CLANG_EXECUTABLE}
 #                -S -emit-llvm -fsanitize=thread
 #                -fno-inline-functions
-#                -mllvm ${tsan_ea_option}
+#                -mllvm -tsan-use-single-threaded
 #                -mllvm -debug-only=tsan
 #                -Wno-return-stack-address
 #                ../${source_file}
-#                -o ${target_name}_TSan_instr.ll
+#                -o ${target_name}_TSan_instr_ST.ll
 #                COMMENT "Running TSan"
 #        )
+
+        # Run TSan
+        add_custom_command(TARGET ${target_name} POST_BUILD
+                COMMAND ${CLANG_EXECUTABLE}
+                -S -emit-llvm -fsanitize=thread
+                -fno-inline-functions
+                -mllvm -tsan-use-swmr
+                -mllvm -debug-only=tsan
+                -Wno-return-stack-address
+                ../${source_file}
+                -o ${target_name}_TSan_instr_SWMR.ll
+                COMMENT "Running TSan"
+        )
 endfunction()
 
 add_single_threaded_target(
         SingleThreadedTest SingleThreadedTest.c
-        single-threaded -tsan-use-escape-analysis-global)
+        single-threaded)
 
 ####################################################################################
 
