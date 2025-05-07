@@ -31,8 +31,7 @@ set(CMAKE_C_LINK_EXECUTABLE
 set(CMAKE_CXX_LINK_EXECUTABLE
         "${LLVM_LINK_EXECUTABLE} <LINK_FLAGS> -S <OBJECTS> -o <TARGET>.ll <LINK_LIBRARIES>")
 
-function(add_single_threaded_target target_name source_file
-        analysis_pass)
+function(add_single_threaded_target target_name source_file)
         add_executable(${target_name} ${source_file})
 
         target_compile_options(${target_name} PRIVATE -O0 -S -emit-llvm
@@ -42,16 +41,17 @@ function(add_single_threaded_target target_name source_file
         )
 
         add_custom_command(TARGET ${target_name} POST_BUILD
+                COMMAND rm -f st_summary.txt
                 COMMAND ${OPT_EXECUTABLE}
                 -S ${target_name}.ll
                 -o ${target_name}_mem2reg.ll
 #                -passes=mem2reg
                 COMMAND ${OPT_EXECUTABLE}
-                -S -passes='print<${analysis_pass}>'
+                -S -passes='print<single-threaded>'
                 -debug-only=single-threaded
                 ${target_name}_mem2reg.ll -disable-output
                 DEPENDS ${target_name}.ll
-                COMMENT "Running ${analysis_pass} Printer"
+                COMMENT "Running single-threaded Printer"
         )
 #-passes=mem2reg
 
@@ -69,22 +69,21 @@ function(add_single_threaded_target target_name source_file
 #        )
 
         # Run TSan
-        add_custom_command(TARGET ${target_name} POST_BUILD
-                COMMAND ${CLANG_EXECUTABLE}
-                -S -emit-llvm -fsanitize=thread
-                -fno-inline-functions
-                -mllvm -tsan-use-swmr
-                -mllvm -debug-only=tsan
-                -Wno-return-stack-address
-                ../${source_file}
-                -o ${target_name}_TSan_instr_SWMR.ll
-                COMMENT "Running TSan"
-        )
+#        add_custom_command(TARGET ${target_name} POST_BUILD
+#                COMMAND ${CLANG_EXECUTABLE}
+#                -S -emit-llvm -fsanitize=thread
+#                -fno-inline-functions
+#                -mllvm -tsan-use-swmr
+#                -mllvm -debug-only=tsan
+#                -Wno-return-stack-address
+#                ../${source_file}
+#                -o ${target_name}_TSan_instr_SWMR.ll
+#                COMMENT "Running TSan"
+#        )
 endfunction()
 
-add_single_threaded_target(
-        SingleThreadedTest SingleThreadedTest.c
-        single-threaded)
+add_single_threaded_target(SingleThreadedTest SingleThreadedTest.c)
+#add_single_threaded_target(IndirectCallTest IndirectCallTest.c)
 
 ####################################################################################
 
